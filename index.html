@@ -10,6 +10,12 @@
 </head>
 <body>
     <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <button id="createGameButton">Create Game</button>
+    <button id="joinGameButton">Join Game</button>
+    <input id="gameCodeInput" placeholder="Enter Game Code" style="display: none;">
+    <button id="startGameButton" style="display: none;">Start Game</button>
+    <div id="gameCodeDisplay" style="display: none;"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="client.js"></script>
 </body>
 </html>
