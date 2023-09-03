@@ -1,21 +1,206 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Ping Pong Multiplayer Game</title>
+  <head>
     <style>
-        canvas {
+
+        body {
             background-color: black;
         }
+      canvas {
+        background-color: black;
+        display: block;
+        margin: 0 auto;
+      }
+
+      #score {
+        color: white;
+        text-align: center;
+        font-size: 24px;
+        margin-top: 20px;
+      }
+
+      #game-over {
+        color: white;
+        text-align: center;
+        font-size: 24px;
+        margin-top: 20px;
+      }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-</head>
-<body>
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
-    <button id="createGameButton">Create Game</button>
-    <button id="joinGameButton">Join Game</button>
-    <input id="gameCodeInput" placeholder="Enter Game Code" style="display: none;">
-    <button id="startGameButton" style="display: none;">Start Game</button>
-    <div id="gameCodeDisplay" style="display: none;"></div>
-    <script src="client.js"></script>
-</body>
+  </head>
+  <body>
+    <canvas id="pong" width="800" height="400"></canvas>
+    <div id="score">
+      <p>Player: 0</p>
+      <p>Computer: 0</p>
+    </div>
+    <div id="game-over"></div>
+    <script>
+      const canvas = document.getElementById("pong");
+      const ctx = canvas.getContext("2d");
+
+      // Paddle properties
+      const paddleWidth = 10;
+      const paddleHeight = 100;
+      let leftPaddleY = canvas.height / 2 - paddleHeight / 2;
+      let rightPaddleY = canvas.height / 2 - paddleHeight / 2;
+
+      // Ball properties
+      const ballSize = 10;
+      let ballX = canvas.width / 2;
+      let ballY = canvas.height / 2;
+      let ballSpeedX = 5;
+      let ballSpeedY = 5;
+
+      // Score variables
+      let playerScore = 0;
+      let computerScore = 0;
+      const maxPoints = 5; // Adjust this as needed
+
+      // User input variables
+      let upPressed = false;
+      let downPressed = false;
+
+      // Event listeners for user input
+      document.addEventListener("keydown", keyDownHandler);
+      document.addEventListener("keyup", keyUpHandler);
+
+      function keyDownHandler(event) {
+        if (event.key == "Down" || event.key == "ArrowDown") {
+          downPressed = true;
+        }
+        if (event.key == "Up" || event.key == "ArrowUp") {
+          upPressed = true;
+        }
+      }
+
+      function keyUpHandler(event) {
+        if (event.key == "Down" || event.key == "ArrowDown") {
+          downPressed = false;
+        }
+        if (event.key == "Up" || event.key == "ArrowUp") {
+          upPressed = false;
+        }
+      }
+
+      // Update the score display
+      function updateScore() {
+        const scoreElement = document.getElementById("score");
+        scoreElement.innerHTML = `<p>Player: ${playerScore}</p><p>Computer: ${computerScore}</p>`;
+      }
+
+      // Check for a win
+      function checkForWin() {
+        if (playerScore === maxPoints) {
+          gameOver("You won! Refresh the page to play again.");
+        } else if (computerScore === maxPoints) {
+          gameOver("The computer won! Refresh the page to play again.");
+        }
+      }
+
+      // Display game over message
+      function gameOver(message) {
+        const gameOverElement = document.getElementById("game-over");
+        gameOverElement.innerHTML = message;
+      }
+
+      // Update function
+      function update() {
+        // Move the paddles
+        if (upPressed && leftPaddleY > 0) {
+          leftPaddleY -= 5;
+        }
+        if (downPressed && leftPaddleY + paddleHeight < canvas.height) {
+          leftPaddleY += 5;
+        }
+
+        // Add AI logic for the right paddle (opponent)
+        if (ballX > canvas.width / 2) {
+          if (ballY > rightPaddleY + paddleHeight / 2) {
+            rightPaddleY += 5;
+          } else {
+            rightPaddleY -= 5;
+          }
+        }
+
+        // Move the ball
+        ballX += ballSpeedX;
+        ballY += ballSpeedY;
+
+        // Ball collision with top and bottom walls
+        if (ballY < 0 || ballY > canvas.height) {
+          ballSpeedY = -ballSpeedY;
+        }
+
+        // Ball collision with paddles
+        if (
+          ballX < paddleWidth &&
+          ballY > leftPaddleY &&
+          ballY < leftPaddleY + paddleHeight
+        ) {
+          ballSpeedX = -ballSpeedX;
+        }
+        if (
+          ballX > canvas.width - paddleWidth &&
+          ballY > rightPaddleY &&
+          ballY < rightPaddleY + paddleHeight
+        ) {
+          ballSpeedX = -ballSpeedX;
+        }
+
+        // Check if the ball goes out of bounds
+        if (ballX < 0) {
+          computerScore++;
+          updateScore();
+          checkForWin();
+          resetGame();
+        } else if (ballX > canvas.width) {
+          playerScore++;
+          updateScore();
+          checkForWin();
+          resetGame();
+        }
+      }
+
+      // Reset the game
+      function resetGame() {
+        ballX = canvas.width / 2;
+        ballY = canvas.height / 2;
+        ballSpeedX = 5;
+        ballSpeedY = 5;
+        leftPaddleY = canvas.height / 2 - paddleHeight / 2;
+        rightPaddleY = canvas.height / 2 - paddleHeight / 2;
+      }
+
+      // Render function
+      function render() {
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw paddles
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, leftPaddleY, paddleWidth, paddleHeight);
+        ctx.fillRect(
+          canvas.width - paddleWidth,
+          rightPaddleY,
+          paddleWidth,
+          paddleHeight
+        );
+
+        // Draw the ball
+        ctx.beginPath();
+        ctx.arc(ballX, ballY, ballSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Game loop
+      function gameLoop() {
+        update();
+        render();
+        requestAnimationFrame(gameLoop);
+      }
+
+      // Start the game loop
+      gameLoop();
+    </script>
+  </body>
 </html>
