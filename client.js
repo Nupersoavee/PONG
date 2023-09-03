@@ -15,26 +15,60 @@ let ballY = canvas.height / 2;
 let ballSpeedX = 5;
 let ballSpeedY = 5;
 
-let gameCode = null; // Store the game code
+let generatedGameCode = null; // Store the generated game code
 let joinedGame = false; // Flag to track if the player has joined a game
 
-// Function to join a game with a code
-function joinGame() {
-    gameCode = prompt('Enter the game code:');
-    if (gameCode) {
-        socket.emit('joinGame', gameCode);
-        joinedGame = true;
+// Function to generate a random game code
+function generateGameCode() {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        code += characters.charAt(randomIndex);
     }
+    return code;
 }
 
-// Handle user input
-canvas.addEventListener('mousemove', (event) => {
-    if (joinedGame) {
-        const mouseY = event.clientY - canvas.getBoundingClientRect().top - paddleHeight / 2;
-        player1Y = mouseY;
-        socket.emit('paddleMove', player1Y);
+// Handle user interactions
+const createGameButton = document.getElementById('createGameButton');
+const joinGameButton = document.getElementById('joinGameButton');
+const gameCodeInput = document.getElementById('gameCodeInput');
+const startGameButton = document.getElementById('startGameButton');
+const gameCodeDisplay = document.getElementById('gameCodeDisplay');
+
+createGameButton.addEventListener('click', createGame);
+joinGameButton.addEventListener('click', showGameCodeInput);
+startGameButton.addEventListener('click', joinGame);
+
+function createGame() {
+    // Generate a random game code and display it
+    generatedGameCode = generateGameCode();
+    gameCodeDisplay.innerText = `Share this code with your friend: ${generatedGameCode}`;
+    gameCodeDisplay.style.display = 'block';
+    startGameButton.style.display = 'block';
+    createGameButton.style.display = 'none';
+    joinGameButton.style.display = 'none';
+}
+
+function showGameCodeInput() {
+    gameCodeInput.style.display = 'block';
+    startGameButton.style.display = 'block';
+    createGameButton.style.display = 'none';
+    joinGameButton.style.display = 'none';
+}
+
+// Handle game joining
+function joinGame() {
+    if (joinedGame) return; // Prevent joining multiple times
+    joinedGame = true;
+
+    if (gameCodeInput.value === generatedGameCode) {
+        // Emit the join game event with the game code
+        socket.emit('joinGame', generatedGameCode);
+    } else {
+        alert('Invalid game code. Please enter the correct code.');
     }
-});
+}
 
 // Receive updates from the server
 socket.on('gameState', (gameState) => {
@@ -63,7 +97,7 @@ function update() {
 }
 
 // Join a game when the page loads
-window.addEventListener('load', joinGame);
+window.addEventListener('load', createGame);
 
 // Start the game loop
 update();
